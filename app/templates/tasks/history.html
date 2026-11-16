@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% block title %}History{% endblock %}
+{% block content %}
+<h1 class="h3 mb-3">Task history</h1>
+{% if activities %}
+<div class="card"><ul class="list-group list-group-flush">
+  {% for a in activities %}
+  <li class="list-group-item d-flex justify-content-between gap-3">
+    <div>
+      <span class="badge badge-action-{{ a.action|lower|replace(' ', '-') }} me-2">{{ a.action }}</span>
+      <span class="fw-semibold">{{ a.task_title }}</span>
+      {% if a.detail %}<div class="text-muted small mt-1">{{ a.detail }}</div>{% endif %}
+    </div>
+    <div class="text-muted small text-nowrap">{{ a.created_at.strftime('%d %b %Y, %H:%M') }} UTC</div>
+  </li>
+  {% endfor %}
+</ul></div>
+{% else %}
+<div class="card card-body text-center py-5 text-muted">No activity yet.</div>
+{% endif %}
+{% endblock %}

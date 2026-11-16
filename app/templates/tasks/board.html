@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% from "_task_macros.html" import priority_badge, status_form, delete_button %}
+{% block title %}Board{% endblock %}
+{% block content %}
+<div class="d-flex justify-content-between align-items-center mb-3">
+  <h1 class="h3 m-0">Task board</h1>
+  <a class="btn btn-primary" href="{{ url_for('tasks.create') }}"><i class="bi bi-plus-lg"></i> New task</a>
+</div>
+<div class="row g-3">
+  {% for status, items in columns.items() %}
+  <div class="col-lg-4">
+    <div class="kanban-col">
+      <div class="kanban-head">
+        <span>{{ status }}</span><span class="badge text-bg-secondary">{{ items|length }}</span>
+      </div>
+      {% for t in items %}
+      <div class="card kanban-card mb-2"><div class="card-body p-3">
+        <div class="d-flex justify-content-between gap-2">
+          <div class="fw-semibold">{{ t.title }}</div>
+          {{ priority_badge(t.priority) }}
+        </div>
+        {% if t.due_date %}
+          <div class="small mt-1 {{ 'text-danger' if t.is_overdue else 'text-muted' }}"><i class="bi bi-calendar-event"></i> {{ t.due_date.strftime('%d %b %Y') }}{% if t.is_overdue %} · overdue{% endif %}</div>
+        {% endif %}
+        <div class="d-flex gap-2 mt-2 align-items-center">
+          <div class="flex-grow-1">{{ status_form(t, statuses) }}</div>
+          <a class="btn btn-sm btn-outline-secondary" href="{{ url_for('tasks.edit', task_id=t.id) }}" aria-label="Edit"><i class="bi bi-pencil"></i></a>
+          {{ delete_button(t) }}
+        </div>
+      </div></div>
+      {% else %}
+      <p class="text-muted small text-center my-3">Nothing here</p>
+      {% endfor %}
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% endblock %}

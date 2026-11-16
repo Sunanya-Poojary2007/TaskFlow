@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="en" data-bs-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="csrf-token" content="{{ csrf_token() }}">
+  <title>{% block title %}TaskFlow{% endblock %} · TaskFlow</title>
+  <link href="{{ url_for('static', filename='vendor/bootstrap.min.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='vendor/bootstrap-icons.min.css') }}" rel="stylesheet">
+  <link href="{{ url_for('static', filename='css/style.css') }}" rel="stylesheet">
+  <script>
+    try {
+      var t = localStorage.getItem("theme");
+      if (t) document.documentElement.setAttribute("data-bs-theme", t);
+    } catch (e) {}
+  </script>
+</head>
+<body>
+{% if current_user.is_authenticated %}
+  <div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+      <div class="brand"><i class="bi bi-check2-square"></i> TaskFlow</div>
+      <nav class="nav flex-column">
+        <a class="nav-link {{ 'active' if request.endpoint == 'main.dashboard' }}" href="{{ url_for('main.dashboard') }}"><i class="bi bi-speedometer2"></i> Dashboard</a>
+        <a class="nav-link {{ 'active' if request.endpoint in ('tasks.list_tasks', 'tasks.create', 'tasks.edit') }}" href="{{ url_for('tasks.list_tasks') }}"><i class="bi bi-list-task"></i> My Tasks</a>
+        <a class="nav-link {{ 'active' if request.endpoint == 'tasks.board' }}" href="{{ url_for('tasks.board') }}"><i class="bi bi-kanban"></i> Board</a>
+        <a class="nav-link {{ 'active' if request.endpoint == 'tasks.history' }}" href="{{ url_for('tasks.history') }}"><i class="bi bi-clock-history"></i> History</a>
+        <a class="nav-link {{ 'active' if request.endpoint == 'auth.profile' }}" href="{{ url_for('auth.profile') }}"><i class="bi bi-person-circle"></i> Profile</a>
+      </nav>
+    </aside>
+
+    <div class="content-area">
+      <header class="topbar">
+        <button class="btn btn-sm btn-outline-secondary d-md-none" id="sidebarToggle" aria-label="Toggle menu"><i class="bi bi-list"></i></button>
+        <div class="ms-auto d-flex align-items-center gap-2">
+          <button class="btn btn-sm btn-outline-secondary" id="themeToggle" aria-label="Toggle dark mode"><i class="bi bi-moon-stars"></i></button>
+          <span class="text-muted small d-none d-sm-inline">{{ current_user.username }}</span>
+          <form method="post" action="{{ url_for('auth.logout') }}" class="m-0">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-sm btn-outline-danger"><i class="bi bi-box-arrow-right"></i> Logout</button>
+          </form>
+        </div>
+      </header>
+      <main class="p-3 p-md-4">
+        {% include "_flash.html" %}
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+  </div>
+{% else %}
+  <button class="btn btn-sm btn-outline-secondary theme-float" id="themeToggle" aria-label="Toggle dark mode"><i class="bi bi-moon-stars"></i></button>
+  <main class="auth-wrap">
+    {% block auth %}{% endblock %}
+  </main>
+{% endif %}
+
+<!-- Delete confirmation modal (used by every delete button) -->
+<div class="modal fade" id="confirmModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+      <div class="modal-header"><h5 class="modal-title">Please confirm</h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+      <div class="modal-body" id="confirmText">Are you sure?</div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+        <button type="button" class="btn btn-danger" id="confirmYes">Yes, delete</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="{{ url_for('static', filename='vendor/bootstrap.bundle.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

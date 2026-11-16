@@ -1,0 +1,93 @@
+name: CI/CD Pipeline
+
+# Stage 1: trigger. Runs on every push and pull request to main.
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  # ---------------------------------------------------------------
+  # CI: check the code (lint + tests)
+  # ---------------------------------------------------------------
+  test:
+    name: Lint and test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out source code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Code quality check (flake8)
+        run: flake8 .
+
+      - name: Run automated tests (pytest)
+        run: pytest -v
+
+  # ---------------------------------------------------------------
+  # Build: make sure the Docker image builds
+  # ---------------------------------------------------------------
+  docker:
+    name: Build Docker image
+    runs-on: ubuntu-latest
+    needs: test            # only runs if lint + tests passed
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build image
+        run: docker build -t task-manager:${{ github.sha }} .
+
+      - name: Smoke-test the container
+        run: |
+          docker run -d --name tm -p 8000:8000 \
+            -e SECRET_KEY=ci-secret task-manager:${{ github.sha }}
+          for i in $(seq 1 15); do
+            if curl -fs http://localhost:8000/healthz; then exit 0; fi
+            sleep 2
+          done
+          docker logs tm
+          exit 1
+
+  # ---------------------------------------------------------------
+  # CD: deploy to Render (only on main, only after everything passed)
+  # ---------------------------------------------------------------
+  deploy:
+    name: Deploy to Render
+    runs-on: ubuntu-latest
+    needs: [test, docker]  # blocked if either job failed
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - name: Trigger Render deploy hook
+        env:
+          RENDER_DEPLOY_HOOK_URL: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: |
+          if [ -z "$RENDER_DEPLOY_HOOK_URL" ]; then
+            echo "Secret RENDER_DEPLOY_HOOK_URL is not set."; exit 1
+          fi
+          curl -fsS -X POST "$RENDER_DEPLOY_HOOK_URL"
+          echo "Deploy triggered."
+
+      - name: Wait and check the live site
+        env:
+          APP_URL: ${{ secrets.APP_URL }}
+        run: |
+          if [ -z "$APP_URL" ]; then
+            echo "APP_URL secret not set, skipping live check."; exit 0
+          fi
+          sleep 60
+          for i in $(seq 1 20); do
+            if curl -fs "$APP_URL/healthz"; then
+              echo; echo "Live site is healthy."; exit 0
+            fi
+            sleep 15
+          done
+          echo "Live site did not become healthy in time."; exit 1

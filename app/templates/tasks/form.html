@@ -1,0 +1,47 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Edit task' if task else 'New task' }}{% endblock %}
+{% block content %}
+{# Values: posted form (after an error) > saved task > defaults #}
+{% set v_title = form.get('title') if form else (task.title if task else '') %}
+{% set v_desc = form.get('description') if form else (task.description if task else '') %}
+{% set v_priority = form.get('priority') if form else (task.priority if task else 'Medium') %}
+{% set v_status = form.get('status') if form else (task.status if task else 'To Do') %}
+{% set v_due = form.get('due_date') if form else (task.due_date.isoformat() if task and task.due_date else '') %}
+
+<h1 class="h3 mb-4">{{ 'Edit task' if task else 'New task' }}</h1>
+<div class="card" style="max-width:720px"><div class="card-body">
+  <form method="post" novalidate>
+    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+    <div class="mb-3">
+      <label class="form-label" for="title">Title *</label>
+      <input class="form-control" id="title" name="title" maxlength="120" value="{{ v_title }}" required autofocus>
+    </div>
+    <div class="mb-3">
+      <label class="form-label" for="description">Description</label>
+      <textarea class="form-control" id="description" name="description" rows="4" maxlength="2000">{{ v_desc }}</textarea>
+    </div>
+    <div class="row g-3 mb-4">
+      <div class="col-md-4">
+        <label class="form-label" for="priority">Priority</label>
+        <select class="form-select" id="priority" name="priority">
+          {% for p in priorities %}<option {{ 'selected' if p == v_priority }}>{{ p }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="status">Status</label>
+        <select class="form-select" id="status" name="status">
+          {% for s in statuses %}<option {{ 'selected' if s == v_status }}>{{ s }}</option>{% endfor %}
+        </select>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="due_date">Due date</label>
+        <input class="form-control" type="date" id="due_date" name="due_date" value="{{ v_due }}">
+      </div>
+    </div>
+    <div class="d-flex gap-2">
+      <button class="btn btn-primary" data-loading="Saving...">{{ 'Save changes' if task else 'Create task' }}</button>
+      <a class="btn btn-light" href="{{ url_for('tasks.list_tasks') }}">Cancel</a>
+    </div>
+  </form>
+</div></div>
+{% endblock %}

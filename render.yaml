@@ -1,0 +1,15 @@
+# Optional Render Blueprint. You can also create the service by hand (see README).
+services:
+  - type: web
+    name: taskflow
+    runtime: docker
+    plan: free
+    autoDeploy: false          # GitHub Actions triggers deploys, not Render
+    healthCheckPath: /healthz
+    envVars:
+      - key: FLASK_ENV
+        value: production
+      - key: SECRET_KEY
+        generateValue: true
+      - key: DATABASE_URL
+        sync: false            # paste your Neon/Supabase URL in the dashboard
